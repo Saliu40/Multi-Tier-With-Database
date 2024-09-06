@@ -4,7 +4,7 @@ pipeline {
         maven "maven3"
     }
     environment {
-        SCANNER_HOME= tools "sonar-scanner"
+        SCANNER_HOME= tools "sonarQube"
     }
     stages {
         stage('Git checkout') {
@@ -24,12 +24,15 @@ pipeline {
         }
         stage('Trivy FS Scan') {
             steps {
-                sh "trivy fs --format table -o fs-report.html ."
+                sh "trivy fs --timeout 10m --format table -o fs-report.html . "
             }
         }
         stage('SonarQube Analysis') {
             steps {
-                echo 'Hello World'
+                withSonarQubeEnv("sonar") {
+                    sh '''$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=bankapp \
+                    -Dsonar.projectName=bankapp -Dsonar.binaries=target'''
+                }
             }
         }
         
@@ -64,16 +67,16 @@ pipeline {
             }
              stage("Deploy To Kubernetes") {
             steps {
-                   withKubeConfig(caCertificate: '', clusterName: ' devopsshack-cluster', contextName: '', credentialsId: 'k8-token', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://BE0697C1E972E170A6F2FE648CB4A9E7.gr7.ap-south-1.eks.amazonaws.com') {
-                sh "kubectl apply -f ds.yml -n webapps"
+                   withKubeConfig(caCertificate: '', clusterName: ' devopsshack-cluster', contextName: '', credentialsId: 'k8-token', namespace: 'divya', restrictKubeConfigAccess: false, serverUrl: 'https://A7B600B6433CB15F4550F1729FDB6398.yl4.ap-south-1.eks.amazonaws.com') {
+                sh "kubectl apply -f ds.yml -n divya"
                 sleep 30
 }
                    }
                    stage("Verify Deployment") {
             steps {
-                   withKubeConfig(caCertificate: '', clusterName: ' devopsshack-cluster', contextName: '', credentialsId: 'k8-token', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://BE0697C1E972E170A6F2FE648CB4A9E7.gr7.ap-south-1.eks.amazonaws.com') {
-                sh "kubectl get pods -n webapps"
-                sh "kubectl get svc -n webapps"
+                   withKubeConfig(caCertificate: '', clusterName: ' devopsshack-cluster', contextName: '', credentialsId: 'k8-token', namespace: 'divya', restrictKubeConfigAccess: false, serverUrl: 'https://A7B600B6433CB15F4550F1729FDB6398.yl4.ap-south-1.eks.amazonaws.com') {
+                sh "kubectl get pods -n divya"
+                sh "kubectl get svc -n divya"
             }
         }
     }
